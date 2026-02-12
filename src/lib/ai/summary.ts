@@ -3,9 +3,20 @@ import { AnalysisReport } from "@/types"
 import { DeployerHistory } from "@/lib/deployer/history"
 import { HolderAnalysis } from "@/lib/holders/analyzer"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Lazy initialization to avoid build-time errors when API key is not set
+let openaiClient: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    return null
+  }
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openaiClient
+}
 
 export interface AISummary {
   verdict: "safe" | "caution" | "danger" | "extreme_danger"
@@ -23,8 +34,9 @@ export async function generateAISummary(
   deployerHistory: DeployerHistory | null,
   holderAnalysis: HolderAnalysis | null
 ): Promise<AISummary> {
-  // Check if API key is configured
-  if (!process.env.OPENAI_API_KEY) {
+  // Check if API key is configured and get client
+  const openai = getOpenAIClient()
+  if (!openai) {
     return generateFallbackSummary(report, deployerHistory, holderAnalysis)
   }
 

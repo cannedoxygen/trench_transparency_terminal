@@ -2,9 +2,20 @@ import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { AnalysisReport } from "@/types"
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+// Lazy initialization to avoid build-time errors
+let openaiClient: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) {
+    return null
+  }
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  }
+  return openaiClient
+}
 
 interface ChatRequest {
   message: string
@@ -20,6 +31,15 @@ interface ChatResponse {
 
 export async function POST(request: NextRequest): Promise<NextResponse<ChatResponse>> {
   try {
+    // Check for OpenAI API key
+    const openai = getOpenAIClient()
+    if (!openai) {
+      return NextResponse.json(
+        { success: false, error: "AI chat is not configured. Missing OPENAI_API_KEY." },
+        { status: 503 }
+      )
+    }
+
     const body: ChatRequest = await request.json()
     const { message, report, history } = body
 
