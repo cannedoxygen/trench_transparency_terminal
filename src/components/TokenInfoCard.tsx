@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { shortenAddress } from "@/lib/utils"
 import { ExternalLink, Copy } from "lucide-react"
 
+// Force HTTPS on image URLs to avoid mixed content warnings
+function secureImageUrl(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  // Convert HTTP to HTTPS
+  if (url.startsWith('http://')) {
+    return url.replace('http://', 'https://')
+  }
+  return url
+}
+
 interface TokenInfoCardProps {
   mint: string
   metadata: TokenMetadata | null
@@ -25,7 +35,7 @@ export function TokenInfoCard({ mint, metadata }: TokenInfoCardProps) {
         <div className="flex items-center gap-4">
           {metadata?.image && (
             <img
-              src={metadata.image}
+              src={secureImageUrl(metadata.image)}
               alt={metadata.name || "Token"}
               className="w-12 h-12 rounded-full bg-muted"
               onError={(e) => {
